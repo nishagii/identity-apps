@@ -157,16 +157,21 @@ export interface approvalWorkflowsNS {
                     description: string
                 },
                 step2: {
-                    title:  string,
+                    title: string,
                     description: string,
                     hint: string
                 },
                 step3: {
-                    title:  string,
+                    title: string,
                     description: string,
                     hint: string
                 }
-            }
+            };
+            tabs: {
+                configureRules: string;
+                configureRulesPlaceholder: string;
+                configureWorkflow: string;
+            };
         };
     };
     forms: {
@@ -196,6 +201,7 @@ export interface approvalWorkflowsNS {
                     allSymbolsErrorMessage: string;
                     invalidInputErrorMessage: string;
                     invalidSymbolsErrorMessage: string;
+                    maxCharLimitErrorMessage: string;
                 };
             };
         };
@@ -228,7 +234,16 @@ export interface approvalWorkflowsNS {
                 placeholder: string;
                 disabledHint: string;
             }
-        }
+        };
+        rules: {
+            configureRule: string;
+            engageIf: string;
+            executionRule: string;
+            loadingRulesMeta: string;
+            noRuleConfigured: string;
+            noRuleTitle: string;
+            ruleConfigured: string;
+        };
     };
     form: {
         fields: {

@@ -39,7 +39,7 @@ export const rules: rulesNS = {
         }
     },
     texts: {
-        execute: "Execute",
+        execute: "Engage",
         if: "If"
     }
 };

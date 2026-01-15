@@ -20,22 +20,27 @@ import Step from "@oxygen-ui/react/Step";
 import StepContent from "@oxygen-ui/react/StepContent";
 import StepLabel from "@oxygen-ui/react/StepLabel";
 import Stepper from "@oxygen-ui/react/Stepper";
+import Tab from "@oxygen-ui/react/Tab";
+import TabPanel from "@oxygen-ui/react/TabPanel";
+import Tabs from "@oxygen-ui/react/Tabs";
 import Typography from "@oxygen-ui/react/Typography";
 import { FeatureAccessConfigInterface, useRequiredScopes } from "@wso2is/access-control";
 import { AppConstants } from "@wso2is/admin.core.v1/constants/app-constants";
 import { history } from "@wso2is/admin.core.v1/helpers/history";
 import { AppState } from "@wso2is/admin.core.v1/store";
+import { RuleWithoutIdInterface } from "@wso2is/admin.rules.v1/models/rules";
 import { AlertLevels, IdentifiableComponentInterface } from "@wso2is/core/models";
 import { addAlert } from "@wso2is/core/store";
 import { EmphasizedSegment, PageLayout } from "@wso2is/react-components";
 import "./approval-workflow-create-page.scss";
 import { AxiosError } from "axios";
-import React, { FunctionComponent, MutableRefObject, ReactElement, useRef, useState } from "react";
+import React, { FunctionComponent, MutableRefObject, ReactElement, SyntheticEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { Dispatch } from "redux";
 import { addApprovalWorkflow } from "../api/approval-workflow";
 import { addWorkflowAssociation } from "../api/workflow-associations";
+import ApprovalWorkflowRulesConfig from "../components/create/approval-workflow-rules-config";
 import ConfigurationsForm, { ConfigurationsFormRef } from "../components/create/configuration-details-form";
 import GeneralApprovalWorkflowDetailsForm, {
     GeneralApprovalWorkflowDetailsFormRef
@@ -91,12 +96,14 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
         approvalWorkflowFeatureConfig?.scopes?.create
     );
 
-    const [ approvalWorkflowFormData, setApprovalWorkflowFormData ] = useState<ApprovalWorkflowFormDataInterface>(null);
-    const [ isApprovalWorkflowCreateRequestLoading, setIsApprovalWorkflowCreateRequestLoading ] = useState<boolean>(
+    const [approvalWorkflowFormData, setApprovalWorkflowFormData] = useState<ApprovalWorkflowFormDataInterface>(null);
+    const [isApprovalWorkflowCreateRequestLoading, setIsApprovalWorkflowCreateRequestLoading] = useState<boolean>(
         false
     );
-    const [ activeStep, setActiveStep ] = useState<number>(0);
-    const [ hasErrors, setHasErrors ] = useState<boolean>(false);
+    const [activeStep, setActiveStep] = useState<number>(0);
+    const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
+    const [hasErrors, setHasErrors] = useState<boolean>(false);
+    const [executionRules, setExecutionRules] = useState<Record<string, RuleWithoutIdInterface>>({});
 
     /**
      * Handles the general details form submission.
@@ -205,6 +212,7 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
                             (operation: DropdownPropsInterface) => ({
                                 associationName: `Association for ${operation.value ?? operation.value}`,
                                 operation: operation.value,
+                                ...(executionRules[operation.value] && { rule: executionRules[operation.value] }),
                                 workflowId: response.id
                             })
                         );
@@ -258,172 +266,219 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
             });
     };
 
+    /**
+     * Handles tab change.
+     *
+     * @param _event - Tab change event.
+     * @param newTabIndex - New tab index.
+     */
+    const handleTabChange = (_event: SyntheticEvent, newTabIndex: number): void => {
+        setActiveTabIndex(newTabIndex);
+    };
+
     return (
         <PageLayout
-            title={ t("approvalWorkflows:pageLayout.create.title") }
-            contentTopMargin={ true }
-            description={ t("approvalWorkflows:pageLayout.create.description") }
+            title={t("approvalWorkflows:pageLayout.create.title")}
+            contentTopMargin={true}
+            description={t("approvalWorkflows:pageLayout.create.description")}
             className="workflow-model-create-page-layout"
-            data-componentid={ `${componentId}-page-layout` }
-            backButton={ {
+            data-componentid={`${componentId}-page-layout`}
+            backButton={{
                 onClick: () => {
                     history.push(AppConstants.getPaths()?.get("APPROVAL_WORKFLOWS"));
                 },
                 text: t("approvalWorkflows:pageLayout.create.back")
-            } }
+            }}
             titleTextAlign="left"
-            bottomMargin={ false }
+            bottomMargin={false}
             showBottomDivider
         >
-            <EmphasizedSegment padded="very" data-componentid={ `${componentId}-segment` }>
-                <Stepper
-                    activeStep={ activeStep }
-                    orientation="vertical"
-                    className="workflow-model-create-stepper"
-                    data-componentid={ `${componentId}-stepper` }
+            <EmphasizedSegment padded="very" data-componentid={`${componentId}-segment`}>
+                <Tabs
+                    value={activeTabIndex}
+                    onChange={handleTabChange}
+                    data-componentid={`${componentId}-tabs`}
                 >
-                    <Step data-componentid={ `${componentId}-step-1` }>
-                        <StepLabel
-                            optional={
-                                (<Typography variant="body2" data-componentid={ `${componentId}-step-1-description` }>
-                                    { t("approvalWorkflows:pageLayout.create.stepper.step1.description") }
-                                </Typography>)
-                            }
-                        >
-                            <Typography variant="h4" data-componentid={ `${componentId}-step-1-title` }>
-                                { t("approvalWorkflows:pageLayout.create.stepper.step1.title") }
-                            </Typography>
-                        </StepLabel>
-                        <StepContent data-componentid={ `${componentId}-step-1-content` }>
-                            <GeneralApprovalWorkflowDetailsForm
-                                ref={ generalApprovalWorkflowDetailsFormRef }
-                                isReadOnly={ !hasApprovalWorkflowCreatePermission }
-                                initialValues={ approvalWorkflowFormData?.generalDetails ?? {} }
-                                onSubmit={ onGeneralDetailsFormSubmit }
-                                data-componentid={ `${componentId}-general-details-form` }
-                            />
-                            <Button
-                                variant="contained"
-                                disabled={ false }
-                                onClick={ () => {
-                                    if (generalApprovalWorkflowDetailsFormRef?.current?.triggerSubmit)
-                                        generalApprovalWorkflowDetailsFormRef.current.triggerSubmit();
-                                } }
-                                loading={ isApprovalWorkflowCreateRequestLoading }
-                                style={ { marginTop: "16px" } }
-                                data-componentid={ `${componentId}-next-button` }
-                            >
-                                { t("common:next") }
-                            </Button>
-                        </StepContent>
-                    </Step>
+                    <Tab
+                        label={t("approvalWorkflows:pageLayout.create.tabs.configureWorkflow")}
+                        data-componentid={`${componentId}-tab-configure-workflow`}
+                    />
+                    <Tab
+                        label={t("approvalWorkflows:pageLayout.create.tabs.configureRules")}
+                        data-componentid={`${componentId}-tab-configure-rules`}
+                    />
+                </Tabs>
 
-                    <Step data-componentid={ `${componentId}-step-2` }>
-                        <StepLabel
-                            optional={
-                                (<Typography variant="body2" data-componentid={ `${componentId}-step-2-description` }>
-                                    { t("approvalWorkflows:pageLayout.create.stepper.step2.description") }
-                                </Typography>)
-                            }
-                        >
-                            <Typography variant="h4" data-componentid={ `${componentId}-step-1-title` }>
-                                { t("approvalWorkflows:pageLayout.create.stepper.step2.title") }
-                            </Typography>
-                        </StepLabel>
-                        <StepContent data-componentid={ `${componentId}-step-2-content` }>
-                            <WorkflowOperationsDetailsForm
-                                ref={ workflowOperationsDetailsFormRef }
-                                isReadOnly={ !hasApprovalWorkflowCreatePermission }
-                                initialValues={ approvalWorkflowFormData?.workflowOperationsDetails ?? {} }
-                                onSubmit={ onWorkflowOperationsDetailsFormSubmit }
-                                data-componentid={ `${componentId}-workflow-operations-details-form` }
-                            />
-                            <div
-                                className="step-actions-container"
-                                data-componentid={ `${componentId}-step-actions-container` }
+                { /* Configure Workflow Tab */}
+                <TabPanel
+                    value={activeTabIndex}
+                    index={0}
+                    data-componentid={`${componentId}-tab-panel-configure-workflow`}
+                >
+                    <Stepper
+                        activeStep={activeStep}
+                        orientation="vertical"
+                        className="workflow-model-create-stepper"
+                        data-componentid={`${componentId}-stepper`}
+                    >
+                        <Step data-componentid={`${componentId}-step-1`}>
+                            <StepLabel
+                                optional={
+                                    (<Typography variant="body2" data-componentid={`${componentId}-step-1-description`}>
+                                        {t("approvalWorkflows:pageLayout.create.stepper.step1.description")}
+                                    </Typography>)
+                                }
                             >
-                                <Button
-                                    variant="outlined"
-                                    disabled={
-                                        !hasApprovalWorkflowCreatePermission || isApprovalWorkflowCreateRequestLoading
-                                    }
-                                    onClick={ () => {
-                                        setActiveStep((prevActiveStep: number) => prevActiveStep - 1);
-                                    } }
-                                    data-componentid={ `${componentId}-previous-button` }
-                                >
-                                    { t("common:previous") }
-                                </Button>
+                                <Typography variant="h4" data-componentid={`${componentId}-step-1-title`}>
+                                    {t("approvalWorkflows:pageLayout.create.stepper.step1.title")}
+                                </Typography>
+                            </StepLabel>
+                            <StepContent data-componentid={`${componentId}-step-1-content`}>
+                                <GeneralApprovalWorkflowDetailsForm
+                                    ref={generalApprovalWorkflowDetailsFormRef}
+                                    isReadOnly={!hasApprovalWorkflowCreatePermission}
+                                    initialValues={approvalWorkflowFormData?.generalDetails ?? {}}
+                                    onSubmit={onGeneralDetailsFormSubmit}
+                                    data-componentid={`${componentId}-general-details-form`}
+                                />
                                 <Button
                                     variant="contained"
-                                    disabled={ null }
-                                    onClick={ () => {
-                                        if (workflowOperationsDetailsFormRef?.current?.triggerSubmit)
-                                            workflowOperationsDetailsFormRef.current.triggerSubmit();
-                                    } }
-                                    loading={ isApprovalWorkflowCreateRequestLoading }
-                                    data-componentid={ `${componentId}-finish-button` }
+                                    disabled={false}
+                                    onClick={() => {
+                                        if (generalApprovalWorkflowDetailsFormRef?.current?.triggerSubmit)
+                                            generalApprovalWorkflowDetailsFormRef.current.triggerSubmit();
+                                    }}
+                                    loading={isApprovalWorkflowCreateRequestLoading}
+                                    style={{ marginTop: "16px" }}
+                                    data-componentid={`${componentId}-next-button`}
                                 >
-                                    { t("common:next") }
+                                    {t("common:next")}
                                 </Button>
-                            </div>
-                        </StepContent>
-                    </Step>
+                            </StepContent>
+                        </Step>
 
-                    <Step data-componentid={ `${componentId}-step-3` }>
-                        <StepLabel
-                            optional={
-                                (<Typography variant="body2" data-componentid={ `${componentId}-step-3-description` }>
-                                    { t("approvalWorkflows:pageLayout.create.stepper.step3.description") }
-                                </Typography>)
-                            }
-                        >
-                            <Typography variant="h4" data-componentid={ `${componentId}-step-2-title` }>
-                                { t("approvalWorkflows:pageLayout.create.stepper.step3.title") }
-                            </Typography>
-                        </StepLabel>
-                        <StepContent data-componentid={ `${componentId}-step-2-content` }>
-                            <ConfigurationsForm
-                                ref={ configurationsFormRef }
-                                isReadOnly={ !hasApprovalWorkflowCreatePermission }
-                                initialValues={ approvalWorkflowFormData?.configurations ?? {} }
-                                hasErrors={ hasErrors }
-                                onSubmit={ onConfigurationDetailsFormSubmit }
-                                data-componentid={ `${componentId}-configurations-form` }
-                            />
-                            <div
-                                className="step-actions-container"
-                                data-componentid={ `${componentId}-step-actions-container` }
+                        <Step data-componentid={`${componentId}-step-2`}>
+                            <StepLabel
+                                optional={
+                                    (<Typography variant="body2" data-componentid={`${componentId}-step-2-description`}>
+                                        {t("approvalWorkflows:pageLayout.create.stepper.step2.description")}
+                                    </Typography>)
+                                }
                             >
-                                <Button
-                                    variant="outlined"
-                                    disabled={
-                                        !hasApprovalWorkflowCreatePermission || isApprovalWorkflowCreateRequestLoading
-                                    }
-                                    onClick={ () => {
-                                        setActiveStep((prevActiveStep: number) => prevActiveStep - 1);
-                                        setHasErrors(false);
-                                    } }
-                                    data-componentid={ `${componentId}-previous-button` }
+                                <Typography variant="h4" data-componentid={`${componentId}-step-2-title`}>
+                                    {t("approvalWorkflows:pageLayout.create.stepper.step2.title")}
+                                </Typography>
+                            </StepLabel>
+                            <StepContent data-componentid={`${componentId}-step-2-content`}>
+                                <WorkflowOperationsDetailsForm
+                                    ref={workflowOperationsDetailsFormRef}
+                                    isReadOnly={!hasApprovalWorkflowCreatePermission}
+                                    initialValues={approvalWorkflowFormData?.workflowOperationsDetails ?? {}}
+                                    onSubmit={onWorkflowOperationsDetailsFormSubmit}
+                                    data-componentid={`${componentId}-workflow-operations-details-form`}
+                                />
+                                <div
+                                    className="step-actions-container"
+                                    data-componentid={`${componentId}-step-actions-container`}
                                 >
-                                    { t("common:previous") }
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    disabled={ null }
-                                    onClick={ () => {
-                                        if (configurationsFormRef?.current?.triggerSubmit)
-                                            configurationsFormRef.current.triggerSubmit();
-                                    } }
-                                    loading={ isApprovalWorkflowCreateRequestLoading }
-                                    data-componentid={ `${componentId}-finish-button` }
+                                    <Button
+                                        variant="outlined"
+                                        disabled={
+                                            !hasApprovalWorkflowCreatePermission || isApprovalWorkflowCreateRequestLoading
+                                        }
+                                        onClick={() => {
+                                            setActiveStep((prevActiveStep: number) => prevActiveStep - 1);
+                                        }}
+                                        data-componentid={`${componentId}-previous-button`}
+                                    >
+                                        {t("common:previous")}
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        disabled={null}
+                                        onClick={() => {
+                                            if (workflowOperationsDetailsFormRef?.current?.triggerSubmit)
+                                                workflowOperationsDetailsFormRef.current.triggerSubmit();
+                                        }}
+                                        loading={isApprovalWorkflowCreateRequestLoading}
+                                        data-componentid={`${componentId}-finish-button`}
+                                    >
+                                        {t("common:next")}
+                                    </Button>
+                                </div>
+                            </StepContent>
+                        </Step>
+
+                        <Step data-componentid={`${componentId}-step-3`}>
+                            <StepLabel
+                                optional={
+                                    (<Typography variant="body2" data-componentid={`${componentId}-step-3-description`}>
+                                        {t("approvalWorkflows:pageLayout.create.stepper.step3.description")}
+                                    </Typography>)
+                                }
+                            >
+                                <Typography variant="h4" data-componentid={`${componentId}-step-3-title`}>
+                                    {t("approvalWorkflows:pageLayout.create.stepper.step3.title")}
+                                </Typography>
+                            </StepLabel>
+                            <StepContent data-componentid={`${componentId}-step-3-content`}>
+                                <ConfigurationsForm
+                                    ref={configurationsFormRef}
+                                    isReadOnly={!hasApprovalWorkflowCreatePermission}
+                                    initialValues={approvalWorkflowFormData?.configurations ?? {}}
+                                    hasErrors={hasErrors}
+                                    onSubmit={onConfigurationDetailsFormSubmit}
+                                    data-componentid={`${componentId}-configurations-form`}
+                                />
+                                <div
+                                    className="step-actions-container"
+                                    data-componentid={`${componentId}-step-actions-container`}
                                 >
-                                    { t("common:finish") }
-                                </Button>
-                            </div>
-                        </StepContent>
-                    </Step>
-                </Stepper>
+                                    <Button
+                                        variant="outlined"
+                                        disabled={
+                                            !hasApprovalWorkflowCreatePermission || isApprovalWorkflowCreateRequestLoading
+                                        }
+                                        onClick={() => {
+                                            setActiveStep((prevActiveStep: number) => prevActiveStep - 1);
+                                            setHasErrors(false);
+                                        }}
+                                        data-componentid={`${componentId}-previous-button`}
+                                    >
+                                        {t("common:previous")}
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        disabled={null}
+                                        onClick={() => {
+                                            if (configurationsFormRef?.current?.triggerSubmit)
+                                                configurationsFormRef.current.triggerSubmit();
+                                        }}
+                                        loading={isApprovalWorkflowCreateRequestLoading}
+                                        data-componentid={`${componentId}-finish-button`}
+                                    >
+                                        {t("common:finish")}
+                                    </Button>
+                                </div>
+                            </StepContent>
+                        </Step>
+                    </Stepper>
+                </TabPanel>
+
+                { /* Configure Rules Tab */}
+                <TabPanel
+                    value={activeTabIndex}
+                    index={1}
+                    data-componentid={`${componentId}-tab-panel-configure-rules`}
+                >
+                    <ApprovalWorkflowRulesConfig
+                        operations={approvalWorkflowFormData?.workflowOperationsDetails?.matchedOperations || []}
+                        initialRules={executionRules}
+                        onChange={setExecutionRules}
+                        isReadOnly={!hasApprovalWorkflowCreatePermission}
+                        data-componentid={`${componentId}-rules-config`}
+                    />
+                </TabPanel>
             </EmphasizedSegment>
         </PageLayout>
     );

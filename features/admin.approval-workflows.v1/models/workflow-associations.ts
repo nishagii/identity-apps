@@ -16,6 +16,8 @@
  * under the License.
  */
 
+import { RuleWithoutIdInterface } from "@wso2is/admin.rules.v1/models/rules";
+
 export interface WorkflowAssociationPayload {
     /**
      * Name of the workflow association.
@@ -26,6 +28,11 @@ export interface WorkflowAssociationPayload {
      * Operation linked to the workflow.
      */
     operation: string;
+
+    /**
+     * Execution rule for conditional gating.
+     */
+    rule?: RuleWithoutIdInterface;
 
     /**
      * ID of the workflow engine to use.

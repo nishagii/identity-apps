@@ -116,7 +116,7 @@ export const approvalWorkflows: approvalWorkflowsNS = {
         },
         connection: {
             connectionErrorMessage:
-            "Please ensure the provided connection " + "URL, name, password and driver name are correct",
+                "Please ensure the provided connection " + "URL, name, password and driver name are correct",
             testButton: "Test Connection",
             updatePassword: "Update connection password"
         },
@@ -130,9 +130,10 @@ export const approvalWorkflows: approvalWorkflowsNS = {
                 placeholder: "Describe the purpose of this approval workflow",
                 validationErrorMessages: {
                     allSymbolsErrorMessage: "Description should have a combination of " +
-                    "alphanumerics and special characters. Please try a different name.",
+                        "alphanumerics and special characters. Please try a different name.",
                     invalidInputErrorMessage: "Description cannot contain the pattern {{invalidString}}.",
-                    invalidSymbolsErrorMessage: "The name you entered contains disallowed characters. It can not contain '/' or '_'."
+                    invalidSymbolsErrorMessage: "The name you entered contains disallowed characters. It can not contain '/' or '_'.",
+                    maxCharLimitErrorMessage: "Description cannot exceed {{maxLength}} characters."
                 }
             },
             engine: {
@@ -146,7 +147,7 @@ export const approvalWorkflows: approvalWorkflowsNS = {
                 requiredErrorMessage: "Name is a required field",
                 validationErrorMessages: {
                     allSymbolsErrorMessage: "The approval workflow name should have a combination of " +
-                    "alphanumerics and special characters. Please try a different name.",
+                        "alphanumerics and special characters. Please try a different name.",
                     alreadyExistsErrorMessage: "An approval workflow with this name already exists.",
                     invalidInputErrorMessage: "Approval workflow name cannot contain the pattern {{invalidString}}.",
                     invalidSymbolsErrorMessage: "The name you entered contains disallowed characters. It can not contain '/' or '_'.",
@@ -161,6 +162,15 @@ export const approvalWorkflows: approvalWorkflowsNS = {
                 nullValidationErrorMessage: "Please select at least one operation",
                 placeholder: "Type operation/s to search and assign"
             }
+        },
+        rules: {
+            configureRule: "Configure Rule",
+            engageIf: "Engage if",
+            executionRule: "Execution Rule",
+            loadingRulesMeta: "Loading rule configuration...",
+            noRuleConfigured: "No execution rule is configured. This workflow will always engage for {{operationName}} without any conditions.",
+            noRuleTitle: "No execution rule is configured.",
+            ruleConfigured: "Rule Configured"
         }
     },
     list: {
@@ -198,8 +208,8 @@ export const approvalWorkflows: approvalWorkflowsNS = {
         },
         delay: {
             description:
-            "It may take a while for the approval workflow list to be updated. " +
-            "Refresh in a few seconds to get the updated approval workflow list.",
+                "It may take a while for the approval workflow list to be updated. " +
+                "Refresh in a few seconds to get the updated approval workflow list.",
             message: "Updating approval workflow list takes time"
         },
         deleteApprovalWorkflow: {
@@ -285,13 +295,18 @@ export const approvalWorkflows: approvalWorkflowsNS = {
                 step2: {
                     description: "Select the operations that would trigger this approval workflow",
                     hint: "This approval workflow will be triggered when any of the selected operations are initiated.",
-                    title:  "Workflow Operation Details"
+                    title: "Workflow Operation Details"
                 },
                 step3: {
                     description: "Configure the approval steps of the model. Approval by any selected user or role member will complete each step.",
                     hint: "You can add multiple approval steps to the workflow. Each step can have different approvers. Approval by any selected user or role member will complete each step.",
-                    title:  "Approval Step Details"
+                    title: "Approval Step Details"
                 }
+            },
+            tabs: {
+                configureRules: "Configure Rules",
+                configureRulesPlaceholder: "Select operations in the 'Configure Workflow' tab to configure execution rules.",
+                configureWorkflow: "Configure Workflow"
             },
             title: "Create an Approval Workflow"
         },
