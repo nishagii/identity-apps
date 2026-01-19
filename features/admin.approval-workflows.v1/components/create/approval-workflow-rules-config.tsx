@@ -126,7 +126,7 @@ const ApprovalWorkflowRulesConfig: FunctionComponent<ApprovalWorkflowRulesConfig
 
     // Get rules metadata for workflow associations
     // TODO: Change this to the correct flow for workflow associations once available in the backend.
-    const { data: ruleExpressionsMetaData } = useGetRulesMeta("preIssueAccessToken");
+    const { data: ruleExpressionsMetaData } = useGetRulesMeta("workflowRules");
 
     /**
      * Notify parent of the change.
