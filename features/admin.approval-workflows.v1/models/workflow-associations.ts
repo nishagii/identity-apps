@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import { RuleWithoutIdInterface } from "@wso2is/admin.rules.v1/models/rules";
+import { RuleWithoutIdInterface } from "../../admin.rules.v1/models/rules";
 
 export interface WorkflowAssociationPayload {
     /**
