@@ -24,8 +24,10 @@ import Typography from "@oxygen-ui/react/Typography";
 import { FeatureAccessConfigInterface, useRequiredScopes } from "@wso2is/access-control";
 import { AppConstants } from "@wso2is/admin.core.v1/constants/app-constants";
 import { history } from "@wso2is/admin.core.v1/helpers/history";
+import { FeatureConfigInterface } from "@wso2is/admin.core.v1/models/config";
 import { AppState } from "@wso2is/admin.core.v1/store";
 import { RuleWithoutIdInterface } from "@wso2is/admin.rules.v1/models/rules";
+import { isFeatureEnabled } from "@wso2is/core/helpers";
 import { AlertLevels, IdentifiableComponentInterface } from "@wso2is/core/models";
 import { addAlert } from "@wso2is/core/store";
 import { EmphasizedSegment, PageLayout } from "@wso2is/react-components";
@@ -44,7 +46,7 @@ import GeneralApprovalWorkflowDetailsForm, {
 import WorkflowOperationsDetailsForm, {
     WorkflowOperationsDetailsFormRef
 } from "../components/create/workflow-operations-details-form";
-import { WORKFLOW_ENGINE } from "../constants/approval-workflow-constants";
+import { FEATURE_FLAG_RULE_BASED_WORKFLOW_ENGAGEMENT, WORKFLOW_ENGINE } from "../constants/approval-workflow-constants";
 import { ApprovalWorkflowPayload, OptionDetails, WorkflowTemplate } from "../models/approval-workflows";
 import {
     ApprovalSteps,
@@ -90,6 +92,15 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
     );
     const hasApprovalWorkflowCreatePermission: boolean = useRequiredScopes(
         approvalWorkflowFeatureConfig?.scopes?.create
+    );
+
+    const featureConfig: FeatureConfigInterface = useSelector(
+        (state: AppState) => state.config.ui.features
+    );
+
+    const isRuleBasedWorkflowEngagementEnabled: boolean = isFeatureEnabled(
+        featureConfig?.approvalWorkflows,
+        FEATURE_FLAG_RULE_BASED_WORKFLOW_ENGAGEMENT
     );
 
     const [ approvalWorkflowFormData, setApprovalWorkflowFormData ] = useState<ApprovalWorkflowFormDataInterface>(null);
@@ -238,7 +249,8 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
                                     associationName: `Association for ${operation.value ?? operation.value}`,
                                     operation: operation.value,
                                     workflowId: response.id,
-                                    ...(rule && rule.rules && rule.rules.length > 0 ? { rule } : {})
+                                    ...(isRuleBasedWorkflowEngagementEnabled
+                                        && rule && rule.rules && rule.rules.length > 0 ? { rule } : {})
                                 };
                             }
                         );
@@ -374,6 +386,9 @@ const ApprovalWorkflowCreatePage: FunctionComponent<CreateApprovalWorkflowProps>
                                     approvalWorkflowFormData?.workflowOperationsDetails?.operationRules ?? {}
                                 }
                                 onRuleUpdate={ handleRuleUpdate }
+                                isRuleBasedWorkflowEngagementEnabled={
+                                    isRuleBasedWorkflowEngagementEnabled
+                                }
                                 data-componentid={ `${componentId}-workflow-operations-details-form` }
                             />
                             <div

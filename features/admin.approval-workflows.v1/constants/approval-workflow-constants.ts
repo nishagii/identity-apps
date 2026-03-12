@@ -65,6 +65,11 @@ export const FLOW_TYPE: string = "approvalWorkflow";
 export const WORKFLOW_ENGINE: string = "WorkflowEngine";
 
 /**
+ * Feature flag identifier for rule-based workflow engagement.
+ */
+export const FEATURE_FLAG_RULE_BASED_WORKFLOW_ENGAGEMENT: string = "approvalWorkflows.rules";
+
+/**
  * Mapping of operation types to their allowed rule fields.
  * Used to filter available fields in the rule builder per operation type.
  */
